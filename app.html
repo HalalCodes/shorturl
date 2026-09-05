@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — ShortURL</title><link rel="stylesheet" href="style.css"></head>
+<body data-page="app">
+<div class="app-layout">
+<aside class="sidebar"><a class="brand" href="index.html"><span class="brand-mark">S</span><span>ShortURL</span></a><nav class="side-nav"><a class="active" href="app.html">⌂ Dashboard</a><a href="#links">↗ My Links</a><a href="#analytics">◔ Analytics</a><a href="profile.html">◎ Profile</a></nav><div class="side-bottom"><a href="user.html">Public profile</a><button id="logoutBtn" class="link-btn">Sign out</button></div></aside>
+<main class="dashboard"><header class="dash-head"><div><span class="eyebrow">Workspace</span><h1>Good to see you<span id="userName"></span> 👋</h1></div><div class="head-actions"><button id="loginBtn" class="btn btn-ghost">Continue with Google</button><a class="avatar" href="profile.html" id="avatar">S</a></div></header>
+<section class="stats"><div class="card stat"><small>Total links</small><strong id="statLinks">0</strong></div><div class="card stat"><small>Total clicks</small><strong id="statClicks">0</strong></div><div class="card stat"><small>Active</small><strong id="statActive">0</strong></div><div class="card stat"><small>Expired</small><strong id="statExpired">0</strong></div></section>
+<section class="card create-card"><div><span class="eyebrow">New short link</span><h2>Turn a long URL into a link people remember.</h2></div><form id="linkForm">
+<label>Destination URL<input id="url" type="url" placeholder="https://example.com/your-long-page" required></label>
+<div class="form-grid"><label>Custom alias<input id="alias" maxlength="48" placeholder="my-link"></label><label>Expires<select id="expiry"><option value="">Never</option><option value="1h">1 hour</option><option value="1d">1 day</option><option value="7d">7 days</option><option value="30d">30 days</option></select></label></div>
+<label class="check"><input id="passwordEnabled" type="checkbox"> Protect this link with a password</label><input id="linkPassword" class="hidden" type="password" minlength="4" maxlength="64" placeholder="Minimum 4 characters">
+<button class="btn btn-primary" type="submit">Create short link</button><p id="formMessage" class="form-message"></p>
+</form></section>
+<section id="links" class="card table-card"><div class="section-inline"><div><span class="eyebrow">Your links</span><h2>Link library</h2></div><input id="searchLinks" class="search" placeholder="Search links..."></div><div id="linksList" class="links-list"></div></section>
+<section id="analytics" class="card analytics-card"><div class="section-inline"><div><span class="eyebrow">Overview</span><h2>Click activity</h2></div></div><div id="activityBars" class="activity-bars"></div></section>
+</main></div>
+<script type="module" src="app.js"></script></body></html>
