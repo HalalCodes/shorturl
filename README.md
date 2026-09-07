@@ -1,24 +1,37 @@
-# ShortURL
+# ShortURL v2
 
-Professional Firebase + GitHub Pages URL shortener starter.
+A modern Firebase + Vercel URL shortener.
 
-## Files
-- `index.html` landing page
-- `app.html` dashboard
-- `user.html` public profile
-- `profile.html` profile settings
-- `link.html` short-link redirect
-- `firebase.js` Firebase initialization
-- `app.js` application logic
-- `style.css` design system
-- `firestore.rules` starter security rules
+## The important fix
 
-## Firebase setup
-1. Enable Authentication > Google.
-2. Add your GitHub Pages domain under Authentication > Settings > Authorized domains.
-3. Create a Firestore database.
-4. Deploy the rules in `firestore.rules`.
-5. Host the files in your repository.
+Created links now use the clean format:
 
-## Important production notes
-This starter stores an optional link password directly in Firestore for demonstration. For a real production deployment, move password verification to trusted server-side code and store only a salted password hash. Also consider a server/edge redirect endpoint for a cleaner `/abc` URL, rate limiting, abuse detection, bot filtering, and a QR library bundled locally if you require zero third-party runtime requests.
+`https://shorturlbd.vercel.app/examplename`
+
+NOT:
+
+`https://shorturlbd.vercel.app/link.html?c=examplename`
+
+Vercel rewrites `/:alias` internally to `link.html?c=:alias`, so the visitor always sees the clean URL.
+
+## Deploy
+
+1. Put all files in the GitHub repository connected to Vercel.
+2. Make sure the Vercel project domain is `shorturlbd.vercel.app`.
+3. Deploy.
+4. In Firebase Authentication, enable Google sign-in and add the Vercel domain to Authorized domains.
+5. Deploy the included `firestore.rules` to Firestore.
+
+## Data model
+
+Each alias is the Firestore document ID. This makes aliases naturally unique and avoids the old race-prone query-then-create approach.
+
+Example:
+`links/examplename`
+
+## Notes
+
+- Redirects work through Vercel rewrites.
+- Click counting is attempted before redirecting.
+- Link passwords are stored as SHA-256 hashes instead of plaintext. For high-security password protection, move verification to a trusted server/Cloud Function.
+- QR generation currently uses QuickChart only when the user clicks QR; normal short-link creation and redirects do not depend on it.
