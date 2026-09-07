@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/:alias([A-Za-z0-9_-]+)",
-      "destination": "/link.html?c=:alias"
-    }
-  ]
-}
