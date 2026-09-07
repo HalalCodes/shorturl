@@ -1,49 +1,963 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="bn" class="light">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#2563eb">
-  <title>ShortURL — Simple, branded links</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShortURL — Smart Link Management & Analytics</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js for Analytics Visuals -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .dark .glass-card {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+    .animate-pulse-fast {
+      animation: pulse-fast 1.5s infinite ease-in-out;
+    }
+  </style>
 </head>
-<body data-page="landing">
-<header class="topbar">
-  <a class="brand" href="index.html"><span class="brand-mark">S</span><span>ShortURL</span></a>
-  <nav><a href="#features">Features</a><a href="#how">How it works</a><a class="btn btn-primary btn-sm" href="app.html">Open Dashboard</a></nav>
-</header>
-<main>
-<section class="hero shell">
-  <div class="hero-copy">
-    <span class="eyebrow">Professional link management</span>
-    <h1>Short links that look <span>like your brand.</span></h1>
-    <p>Create memorable custom URLs, control access, generate QR codes and understand your clicks from one clean dashboard.</p>
-    <div class="hero-actions"><a class="btn btn-primary" href="app.html">Create a short link</a><a class="btn btn-ghost" href="#features">Explore features</a></div>
-    <div class="trust-row"><span>✓ Custom aliases</span><span>✓ Expiration</span><span>✓ Password protection</span><span>✓ QR codes</span></div>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-200 min-h-screen pb-20 md:pb-0">
+
+  <!-- ================= REDIRECTING GATEWAY SCREEN ================= -->
+  <div id="redirect-gateway-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center">
+    <div class="w-20 h-20 rounded-3xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-3xl mb-6 animate-pulse-fast">
+      <i class="fa-solid fa-paper-plane"></i>
+    </div>
+    <span class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">ShortURL Gateway</span>
+    <h1 id="redirect-status-title" class="text-2xl font-extrabold mb-2">Redirecting you...</h1>
+    <p id="redirect-status-desc" class="text-xs text-slate-400 max-w-sm mb-6 break-all">Connecting to target website URL securely.</p>
+    
+    <div class="w-48 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+      <div class="w-full h-full bg-blue-500 animate-pulse"></div>
+    </div>
+
+    <!-- Go Back Link if Stuck -->
+    <button onclick="cancelRedirect()" class="mt-8 text-xs font-semibold text-slate-400 hover:text-white underline">
+      Cancel & Return to Dashboard
+    </button>
   </div>
-  <div class="hero-card card">
-    <div class="mock-top"><span class="dot"></span><span>shorturl</span><span class="pill">LIVE</span></div>
-    <div class="mock-url">shorturlbd.vercel.app/<strong>omor</strong></div>
-    <div class="mock-grid"><div><small>Clicks</small><b>12,481</b></div><div><small>Status</small><b class="success">Active</b></div></div>
-    <div class="mini-chart"><i style="height:35%"></i><i style="height:55%"></i><i style="height:42%"></i><i style="height:72%"></i><i style="height:62%"></i><i style="height:88%"></i><i style="height:76%"></i></div>
+
+  <div id="app" class="flex flex-col min-h-screen">
+    
+    <!-- Top Navigation -->
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        
+        <!-- Logo -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/30">
+            S
+          </div>
+          <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Short<span class="text-blue-600 dark:text-blue-400">URL</span></span>
+        </div>
+
+        <!-- Desktop Navigation Tabs -->
+        <nav class="hidden md:flex items-center space-x-1">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            <i class="fa-solid fa-gauge mr-2"></i>Dashboard
+          </button>
+          <button onclick="switchTab('links')" id="nav-links" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            <i class="fa-solid fa-link mr-2"></i>My Links
+          </button>
+          <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            <i class="fa-solid fa-chart-column mr-2"></i>Analytics
+          </button>
+          <button onclick="switchTab('bio')" id="nav-bio" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            <i class="fa-solid fa-id-card mr-2"></i>Bio Page
+          </button>
+        </nav>
+
+        <!-- Header Actions -->
+        <div class="flex items-center space-x-3">
+          <!-- Theme Toggle Button -->
+          <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+            <i id="theme-icon" class="fa-solid fa-moon"></i>
+          </button>
+
+          <!-- User Profile / Auth State -->
+          <div id="auth-container">
+            <button onclick="toggleAuthModal()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-md shadow-blue-500/20">
+              <i class="fa-brands fa-google mr-2"></i>Sign In
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+      <!-- ================= VIEW 1: DASHBOARD ================= -->
+      <section id="view-dashboard" class="space-y-6">
+        
+        <!-- Welcome Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-blue-600/10">
+          <div>
+            <span class="text-blue-200 text-xs font-bold tracking-widest uppercase">Workspace Overview</span>
+            <h1 class="text-2xl sm:text-3xl font-extrabold mt-1">Welcome back, <span id="user-greeting-name">Guest</span> 👋</h1>
+            <p class="text-blue-100 text-sm mt-1">Shorten links, protect access and view real-time click insights.</p>
+          </div>
+          <button onclick="document.getElementById('long-url-input').focus()" class="self-start sm:self-auto px-5 py-2.5 bg-white text-blue-600 rounded-2xl font-bold text-sm shadow-md hover:bg-blue-50 transition">
+            <i class="fa-solid fa-plus mr-2"></i>New Link
+          </button>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider">Total Links</span>
+              <i class="fa-solid fa-link text-blue-500"></i>
+            </div>
+            <p id="stat-total-links" class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">0</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider">Total Clicks</span>
+              <i class="fa-solid fa-arrow-pointer text-indigo-500"></i>
+            </div>
+            <p id="stat-total-clicks" class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">0</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider">Active Links</span>
+              <i class="fa-solid fa-circle-check text-emerald-500"></i>
+            </div>
+            <p id="stat-active-links" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">0</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider">Expired / Disabled</span>
+              <i class="fa-solid fa-clock-rotate-left text-amber-500"></i>
+            </div>
+            <p id="stat-expired-links" class="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400">0</p>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="mb-6">
+            <span class="text-xs font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Create Short URL</span>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white mt-1">Shorten a long web link</h2>
+          </div>
+
+          <form id="create-link-form" onsubmit="handleCreateLink(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Destination URL <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                  <i class="fa-solid fa-globe"></i>
+                </span>
+                <input type="url" id="long-url-input" required placeholder="https://example.com/very-long-article-or-page-path" 
+                  class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm transition">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Custom Slug / Alias (Optional)</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 text-xs font-bold">
+                    short.url/#
+                  </span>
+                  <input type="text" id="custom-alias-input" pattern="[A-Za-z0-9_-]{3,48}" placeholder="hstapp" 
+                    class="w-full pl-24 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm transition">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Expiration Period</label>
+                <select id="expiration-select" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm transition">
+                  <option value="never">Never (Unlimited)</option>
+                  <option value="1h">1 Hour</option>
+                  <option value="1d">1 Day</option>
+                  <option value="7d">7 Days</option>
+                  <option value="30d">30 Days</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Password Protection Toggle -->
+            <div class="pt-2">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="enable-password-checkbox" onchange="togglePasswordInput()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-slate-300 dark:border-slate-700">
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300"><i class="fa-solid fa-lock text-amber-500 mr-1.5"></i> Protect link with password</span>
+              </label>
+
+              <div id="password-field-container" class="hidden mt-3">
+                <input type="password" id="link-password-input" minlength="4" placeholder="Enter password (min 4 characters)" 
+                  class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-500/25 transition">
+                <i class="fa-solid fa-bolt mr-2"></i>Create Short Link
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Quick Activity Section -->
+        <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+            <div>
+              <span class="text-xs font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Overview</span>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">Click Activity Chart</h2>
+            </div>
+            <button onclick="switchTab('analytics')" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+              View Detailed Analytics <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+
+          <!-- CHART CONTAINER -->
+          <div class="relative h-64 w-full">
+            <canvas id="dashboardChart"></canvas>
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- ================= VIEW 2: LINK LIBRARY ================= -->
+      <section id="view-links" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Link Library</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Manage, edit, search and track all your generated links.</p>
+          </div>
+
+          <!-- Search Filter Input -->
+          <div class="relative w-full sm:w-72">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text" id="search-links-input" oninput="renderLinksList()" placeholder="Search links or destination..." 
+              class="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Links List Container -->
+        <div id="links-container" class="space-y-3">
+          <!-- Dynamic Links rendered by JS -->
+        </div>
+      </section>
+
+
+      <!-- ================= VIEW 3: CLICK ANALYTICS ================= -->
+      <section id="view-analytics" class="hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Detailed Click Analytics</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Performance metrics for your top performing short URLs.</p>
+        </div>
+
+        <!-- Full Analytics Chart -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 mb-4">Top Links Comparison (Click Counts)</h3>
+          <div class="relative h-80 w-full">
+            <canvas id="analyticsDetailedChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Analytics Table -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-100 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-100">
+            Link Performance Table
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-xs uppercase font-bold">
+                <tr>
+                  <th class="p-4">Alias / Short URL</th>
+                  <th class="p-4">Destination</th>
+                  <th class="p-4">Clicks</th>
+                  <th class="p-4">Status</th>
+                  <th class="p-4">Created Date</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                <!-- Dynamic Analytics Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================= VIEW 4: LINK-IN-BIO PROFILE ================= -->
+      <section id="view-bio" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          <!-- Bio Editor -->
+          <div class="lg:col-span-5 space-y-4 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">Bio Profile Customizer</h2>
+            <p class="text-xs text-slate-500">Build your link-in-bio page to share on social media.</p>
+
+            <form id="bio-profile-form" onsubmit="saveBioProfile(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold mb-1">Display Name</label>
+                <input type="text" id="bio-name-input" value="Omor Faruk" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold mb-1">Bio / Headline</label>
+                <textarea id="bio-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm">Tech Lead & Web Developer. Creator of HalalCodes & ShortURL.</textarea>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold mb-1">Username (URL Slug)</label>
+                <div class="flex items-center">
+                  <span class="text-xs text-slate-400 mr-2">shorturlbd.vercel.app/#</span>
+                  <input type="text" id="bio-username-input" value="omor" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm">
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition">
+                Save Bio Page
+              </button>
+            </form>
+          </div>
+
+          <!-- Bio Live Phone Preview -->
+          <div class="lg:col-span-7 flex justify-center">
+            <div class="w-full max-w-sm border-8 border-slate-800 dark:border-slate-700 rounded-[40px] p-6 bg-gradient-to-b from-slate-900 to-indigo-950 text-white shadow-2xl relative min-h-[500px]">
+              
+              <!-- Camera Notch -->
+              <div class="w-28 h-4 bg-slate-800 rounded-b-xl mx-auto -mt-6 mb-6"></div>
+
+              <!-- Profile Avatar -->
+              <div class="text-center space-y-3">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 mx-auto flex items-center justify-center text-3xl font-black shadow-lg">
+                  <span id="preview-avatar-char">O</span>
+                </div>
+                <div>
+                  <h3 id="preview-bio-name" class="font-bold text-lg">Omor Faruk</h3>
+                  <p id="preview-bio-desc" class="text-xs text-slate-300 mt-1">Tech Lead & Web Developer. Creator of HalalCodes & ShortURL.</p>
+                </div>
+              </div>
+
+              <!-- Bio Links List -->
+              <div id="preview-bio-links" class="mt-6 space-y-3">
+                <!-- Dynamically Rendered Bio Links -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 px-2 py-1.5 flex justify-around items-center">
+      <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center p-2 rounded-xl text-slate-500">
+        <i class="fa-solid fa-gauge text-lg"></i>
+        <span class="text-[10px] font-bold mt-0.5">Home</span>
+      </button>
+      <button onclick="switchTab('links')" id="mob-nav-links" class="flex flex-col items-center p-2 rounded-xl text-slate-500">
+        <i class="fa-solid fa-link text-lg"></i>
+        <span class="text-[10px] font-bold mt-0.5">Links</span>
+      </button>
+      <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="flex flex-col items-center p-2 rounded-xl text-slate-500">
+        <i class="fa-solid fa-chart-column text-lg"></i>
+        <span class="text-[10px] font-bold mt-0.5">Stats</span>
+      </button>
+      <button onclick="switchTab('bio')" id="mob-nav-bio" class="flex flex-col items-center p-2 rounded-xl text-slate-500">
+        <i class="fa-solid fa-id-card text-lg"></i>
+        <span class="text-[10px] font-bold mt-0.5">Bio</span>
+      </button>
+    </div>
+
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 border border-slate-200 dark:border-slate-700 shadow-2xl">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-lg text-slate-900 dark:text-white">QR Code</h3>
+          <button onclick="closeQrModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div id="qrcode-box" class="bg-white p-4 rounded-2xl flex justify-center border border-slate-100 shadow-inner"></div>
+        <p id="qr-url-text" class="text-xs text-slate-500 break-all"></p>
+
+        <button onclick="closeQrModal()" class="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm">
+          Done
+        </button>
+      </div>
+    </div>
+
+    <!-- Password Prompt Gateway Modal (Redirect Simulator) -->
+    <div id="password-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto text-xl">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h3 class="font-bold text-lg text-slate-900 dark:text-white">Protected Link</h3>
+        <p class="text-xs text-slate-500">This short link requires a password to access.</p>
+
+        <form onsubmit="handleUnlockPassword(event)" class="space-y-3">
+          <input type="password" id="unlock-password-input" required placeholder="Enter password" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm">
+          <button type="submit" class="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm">Unlock & Redirect</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
   </div>
-</section>
-<section id="features" class="shell section">
-  <div class="section-head"><span class="eyebrow">Everything in one place</span><h2>Built for creators, teams and businesses.</h2></div>
-  <div class="feature-grid">
-    <article class="card feature"><b>🔗 Custom aliases</b><p>Make links memorable with your own short slug.</p></article>
-    <article class="card feature"><b>🔐 Protected links</b><p>Add an optional password and expiration time.</p></article>
-    <article class="card feature"><b>▦ QR codes</b><p>Generate a QR code for every short link.</p></article>
-    <article class="card feature"><b>📊 Analytics</b><p>Track clicks, devices, browsers and referrers.</p></article>
-    <article class="card feature"><b>👤 Personal profile</b><p>Give your audience a public collection of links.</p></article>
-    <article class="card feature"><b>⚡ Fast dashboard</b><p>Manage everything without unnecessary page reloads.</p></article>
-  </div>
-</section>
-<section id="how" class="shell section">
-  <div class="section-head"><span class="eyebrow">Three steps</span><h2>From long URL to shareable link.</h2></div>
-  <div class="steps"><div><span>01</span><h3>Create</h3><p>Paste a URL and choose your custom settings.</p></div><div><span>02</span><h3>Customize</h3><p>Set an alias, password, expiration and metadata.</p></div><div><span>03</span><h3>Share</h3><p>Copy your link or show its QR code anywhere.</p></div></div>
-</section>
-</main>
-<footer class="footer shell">© 2026 ShortURL · Built for HalalCodes</footer>
+
+
+  <script>
+    // Default initial mock data
+    const defaultLinks = [
+      {
+        id: 'alias-hstapp',
+        alias: 'hstapp',
+        originalUrl: 'https://github.com/omor-faruk',
+        clicks: 342,
+        active: true,
+        passwordRequired: false,
+        expiresAt: null,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'alias-omor',
+        alias: 'omor',
+        originalUrl: 'https://facebook.com/omor.faruk',
+        clicks: 1420,
+        active: true,
+        passwordRequired: false,
+        expiresAt: null,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'alias-project',
+        alias: 'project-demo',
+        originalUrl: 'https://vercel.app/demo-showcase',
+        clicks: 890,
+        active: true,
+        passwordRequired: true,
+        passwordHash: '1234',
+        expiresAt: null,
+        createdAt: new Date(Date.now() - 86400000).toISOString()
+      }
+    ];
+
+    // State Variables
+    let links = JSON.parse(localStorage.getItem('shorturl_links')) || defaultLinks;
+    let currentTab = 'dashboard';
+    let chartInstance = null;
+    let analyticsChartInstance = null;
+    let pendingUnlockAlias = null;
+
+    // Save initial links if empty
+    if (!localStorage.getItem('shorturl_links')) {
+      localStorage.setItem('shorturl_links', JSON.stringify(defaultLinks));
+    }
+
+    // Router and Tab Switching
+    function switchTab(tabId, updateHash = true) {
+      currentTab = tabId;
+
+      if (updateHash) {
+        window.location.hash = tabId;
+      }
+
+      // Views toggling
+      ['dashboard', 'links', 'analytics', 'bio'].forEach(view => {
+        const el = document.getElementById(`view-${view}`);
+        if (el) {
+          if (view === tabId) {
+            el.classList.remove('hidden');
+          } else {
+            el.classList.add('hidden');
+          }
+        }
+      });
+
+      // Desktop Nav active states
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-50', 'text-blue-600', 'dark:bg-slate-700', 'dark:text-blue-400');
+        btn.classList.add('text-slate-600', 'dark:text-slate-300');
+      });
+
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      if (activeNav) {
+        activeNav.classList.add('bg-blue-50', 'text-blue-600', 'dark:bg-slate-700', 'dark:text-blue-400');
+      }
+
+      // Mobile Nav active states
+      ['dashboard', 'links', 'analytics', 'bio'].forEach(v => {
+        const mob = document.getElementById(`mob-nav-${v}`);
+        if (mob) {
+          if (v === tabId) {
+            mob.classList.add('text-blue-600');
+            mob.classList.remove('text-slate-500');
+          } else {
+            mob.classList.remove('text-blue-600');
+            mob.classList.add('text-slate-500');
+          }
+        }
+      });
+
+      // Render tab contents
+      if (tabId === 'dashboard') renderDashboard();
+      if (tabId === 'links') renderLinksList();
+      if (tabId === 'analytics') renderAnalyticsPage();
+      if (tabId === 'bio') renderBioPreview();
+    }
+
+    // Handle Hash/URL Short Link Redirection
+    function checkAndExecuteRoute() {
+      const hash = window.location.hash.replace('#', '').trim();
+      const params = new URLSearchParams(window.location.search);
+      const queryAlias = params.get('c') || params.get('alias');
+
+      const targetAlias = queryAlias || hash;
+
+      // Standard App Views
+      if (!targetAlias || ['dashboard', 'links', 'analytics', 'bio'].includes(targetAlias)) {
+        switchTab(targetAlias || 'dashboard', false);
+        return;
+      }
+
+      // Handle Short Link Redirection
+      executeShortLinkRedirect(targetAlias);
+    }
+
+    function executeShortLinkRedirect(alias) {
+      const link = links.find(l => l.alias.toLowerCase() === alias.toLowerCase());
+
+      const gateway = document.getElementById('redirect-gateway-screen');
+      const titleEl = document.getElementById('redirect-status-title');
+      const descEl = document.getElementById('redirect-status-desc');
+
+      if (!link) {
+        gateway.classList.remove('hidden');
+        titleEl.textContent = 'Link Not Found 404';
+        titleEl.classList.add('text-red-400');
+        descEl.textContent = `The short link "${alias}" does not exist in our system.`;
+        return;
+      }
+
+      const isExpired = link.expiresAt && new Date(link.expiresAt) < new Date();
+      if (!link.active || isExpired) {
+        gateway.classList.remove('hidden');
+        titleEl.textContent = 'Link Unavailable';
+        titleEl.classList.add('text-amber-400');
+        descEl.textContent = 'This short link has expired or has been disabled.';
+        return;
+      }
+
+      if (link.passwordRequired) {
+        pendingUnlockAlias = link.alias;
+        document.getElementById('password-modal').classList.remove('hidden');
+        return;
+      }
+
+      // Show Gateway Screen and Redirect
+      gateway.classList.remove('hidden');
+      titleEl.textContent = `Redirecting to short.url/${link.alias}...`;
+      descEl.textContent = `Destination: ${link.originalUrl}`;
+
+      // Increment Clicks
+      link.clicks = (link.clicks || 0) + 1;
+      saveState();
+
+      setTimeout(() => {
+        window.location.href = link.originalUrl;
+      }, 800);
+    }
+
+    function cancelRedirect() {
+      document.getElementById('redirect-gateway-screen').classList.add('hidden');
+      window.location.hash = 'dashboard';
+      switchTab('dashboard', false);
+    }
+
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        icon.className = 'fa-solid fa-moon';
+      } else {
+        html.classList.add('dark');
+        icon.className = 'fa-solid fa-sun text-amber-400';
+      }
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 flex items-center space-x-2 ${
+        type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+      }`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i><span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    function saveState() {
+      localStorage.setItem('shorturl_links', JSON.stringify(links));
+    }
+
+    function togglePasswordInput() {
+      const cb = document.getElementById('enable-password-checkbox');
+      const box = document.getElementById('password-field-container');
+      box.classList.toggle('hidden', !cb.checked);
+    }
+
+    function handleCreateLink(e) {
+      e.preventDefault();
+      const originalUrl = document.getElementById('long-url-input').value.trim();
+      let alias = document.getElementById('custom-alias-input').value.trim();
+      const expirationVal = document.getElementById('expiration-select').value;
+      const hasPassword = document.getElementById('enable-password-checkbox').checked;
+      const password = document.getElementById('link-password-input').value;
+
+      if (!alias) {
+        alias = Math.random().toString(36).substring(2, 8);
+      }
+
+      // Check duplicate
+      if (links.some(l => l.alias.toLowerCase() === alias.toLowerCase())) {
+        showToast('That alias is already in use. Please try another.', 'error');
+        return;
+      }
+
+      let expiresAt = null;
+      if (expirationVal === '1h') expiresAt = new Date(Date.now() + 3600000).toISOString();
+      if (expirationVal === '1d') expiresAt = new Date(Date.now() + 86400000).toISOString();
+      if (expirationVal === '7d') expiresAt = new Date(Date.now() + 604800000).toISOString();
+      if (expirationVal === '30d') expiresAt = new Date(Date.now() + 2592000000).toISOString();
+
+      const newLink = {
+        id: 'alias-' + alias,
+        alias,
+        originalUrl,
+        clicks: 0,
+        active: true,
+        passwordRequired: hasPassword,
+        passwordHash: hasPassword ? password : null,
+        expiresAt,
+        createdAt: new Date().toISOString()
+      };
+
+      links.unshift(newLink);
+      saveState();
+
+      // Reset Form
+      document.getElementById('create-link-form').reset();
+      document.getElementById('password-field-container').classList.add('hidden');
+
+      showToast(`Short URL Created: ${getShortUrlString(alias)}`);
+      renderDashboard();
+    }
+
+    function getShortUrlString(alias) {
+      return `${window.location.origin}/#${alias}`;
+    }
+
+    function renderDashboard() {
+      // Calculate Stats
+      const totalLinks = links.length;
+      const totalClicks = links.reduce((sum, item) => sum + (item.clicks || 0), 0);
+      const activeLinks = links.filter(l => l.active && (!l.expiresAt || new Date(l.expiresAt) > new Date())).length;
+      const expiredLinks = totalLinks - activeLinks;
+
+      document.getElementById('stat-total-links').textContent = totalLinks;
+      document.getElementById('stat-total-clicks').textContent = totalClicks.toLocaleString();
+      document.getElementById('stat-active-links').textContent = activeLinks;
+      document.getElementById('stat-expired-links').textContent = expiredLinks;
+
+      // Render Main Overview Chart
+      renderDashboardChart();
+    }
+
+    function renderDashboardChart() {
+      const ctx = document.getElementById('dashboardChart').getContext('2d');
+      
+      // Sort top 6 links by clicks
+      const topLinks = [...links].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 6);
+
+      const labels = topLinks.map(l => l.alias);
+      const data = topLinks.map(l => l.clicks || 0);
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels.length ? labels : ['No Data'],
+          datasets: [{
+            label: 'Total Clicks',
+            data: data.length ? data : [0],
+            backgroundColor: 'rgba(37, 99, 235, 0.85)',
+            hoverBackgroundColor: 'rgba(29, 78, 216, 1)',
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(148, 163, 184, 0.1)' }
+            },
+            x: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function renderLinksList() {
+      const container = document.getElementById('links-container');
+      const searchTerm = document.getElementById('search-links-input').value.toLowerCase();
+
+      const filtered = links.filter(l => 
+        l.alias.toLowerCase().includes(searchTerm) || 
+        l.originalUrl.toLowerCase().includes(searchTerm)
+      );
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl text-center text-slate-400 border border-slate-200 dark:border-slate-700">
+            <i class="fa-solid fa-link-slash text-3xl mb-2"></i>
+            <p class="text-sm font-semibold">No short links found matching your search.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(link => {
+        const isExpired = link.expiresAt && new Date(link.expiresAt) < new Date();
+        const shortUrlStr = getShortUrlString(link.alias);
+
+        return `
+          <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1 min-w-0">
+              <div class="flex items-center space-x-2">
+                <a href="#${link.alias}" class="font-bold text-blue-600 dark:text-blue-400 text-base hover:underline">
+                  #${link.alias}
+                </a>
+                ${link.passwordRequired ? '<span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] font-bold"><i class="fa-solid fa-lock"></i> Locked</span>' : ''}
+                ${isExpired ? '<span class="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[10px] font-bold">Expired</span>' : ''}
+              </div>
+              <p class="text-xs text-slate-500 truncate max-w-md">${link.originalUrl}</p>
+              <div class="flex items-center space-x-3 text-[11px] text-slate-400 pt-1">
+                <span><i class="fa-solid fa-arrow-pointer mr-1"></i>${link.clicks || 0} clicks</span>
+                <span>•</span>
+                <span>Created ${new Date(link.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-2 self-end sm:self-center">
+              <button onclick="copyToClipboard('${shortUrlStr}')" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                <i class="fa-regular fa-copy mr-1"></i>Copy
+              </button>
+              <button onclick="openQrModal('${shortUrlStr}')" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                <i class="fa-solid fa-qrcode mr-1"></i>QR
+              </button>
+              <button onclick="deleteLink('${link.id}')" class="px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 transition">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Link copied to clipboard!');
+      }).catch(() => {
+        showToast('Copy failed!', 'error');
+      });
+    }
+
+    function deleteLink(id) {
+      links = links.filter(l => l.id !== id);
+      saveState();
+      showToast('Link deleted');
+      renderLinksList();
+      renderDashboard();
+    }
+
+    function handleUnlockPassword(e) {
+      e.preventDefault();
+      const entered = document.getElementById('unlock-password-input').value;
+      const link = links.find(l => l.alias.toLowerCase() === pendingUnlockAlias.toLowerCase());
+
+      if (link && link.passwordHash === entered) {
+        document.getElementById('password-modal').classList.add('hidden');
+        document.getElementById('unlock-password-input').value = '';
+        executeShortLinkRedirect(link.alias);
+        showToast('Unlocked successfully!');
+      } else {
+        showToast('Incorrect password!', 'error');
+      }
+    }
+
+    function openQrModal(url) {
+      const box = document.getElementById('qrcode-box');
+      box.innerHTML = '';
+      new QRCode(box, {
+        text: url,
+        width: 180,
+        height: 180
+      });
+      document.getElementById('qr-url-text').textContent = url;
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    function renderAnalyticsPage() {
+      const tbody = document.getElementById('analytics-table-body');
+      tbody.innerHTML = links.map(l => `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+          <td class="p-4 font-bold text-blue-600">#${l.alias}</td>
+          <td class="p-4 text-slate-500 truncate max-w-xs">${l.originalUrl}</td>
+          <td class="p-4 font-extrabold">${l.clicks || 0}</td>
+          <td class="p-4"><span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-xs font-bold">Active</span></td>
+          <td class="p-4 text-slate-400 text-xs">${new Date(l.createdAt).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+
+      const ctx = document.getElementById('analyticsDetailedChart').getContext('2d');
+      if (analyticsChartInstance) analyticsChartInstance.destroy();
+
+      analyticsChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: links.map(l => l.alias),
+          datasets: [{
+            label: 'Click Growth',
+            data: links.map(l => l.clicks || 0),
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+
+    function renderBioPreview() {
+      const name = document.getElementById('bio-name-input').value;
+      const desc = document.getElementById('bio-desc-input').value;
+
+      document.getElementById('preview-bio-name').textContent = name;
+      document.getElementById('preview-bio-desc').textContent = desc;
+      document.getElementById('preview-avatar-char').textContent = name.charAt(0).toUpperCase();
+
+      const linksBox = document.getElementById('preview-bio-links');
+      linksBox.innerHTML = links.slice(0, 4).map(l => `
+        <a href="#${l.alias}" class="block p-3 bg-white/10 hover:bg-white/20 rounded-2xl text-center text-xs font-bold transition border border-white/10 backdrop-blur-md">
+          #${l.alias}
+        </a>
+      `).join('');
+    }
+
+    function saveBioProfile(e) {
+      e.preventDefault();
+      renderBioPreview();
+      showToast('Bio Profile Updated!');
+    }
+
+    function toggleAuthModal() {
+      showToast('Signed in as Omor Faruk (Google)');
+    }
+
+    // Hash Change Event Listener for URL Routing
+    window.addEventListener('hashchange', checkAndExecuteRoute);
+
+    // Initial Page Load
+    window.onload = function() {
+      checkAndExecuteRoute();
+    };
+  </script>
 </body>
 </html>
+i
